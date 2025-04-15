@@ -1,0 +1,60 @@
+
+
+package org.zmimi.webapp.orgin.iso7816;
+
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DLTaggedObject;
+
+import java.io.IOException;
+
+/**
+ * Data Object with tag 87 contains a padding indicator followed by the cryptogram
+ * 
+ * @author  (Standardanvändare)
+ *
+ */
+public class DO87 extends DO85 {
+
+	private byte[] value_ = null;
+
+	public DO87() {
+	}
+
+	public DO87(byte[] data) {
+		this.data = data.clone();
+		value_ = addPaddingIndicator(data);
+		super.to = new DLTaggedObject(false, 7, new DEROctetString(value_));
+	}
+
+	private byte[] addPaddingIndicator(byte[] data) {
+		byte[] ret = new byte[data.length + 1];
+		System.arraycopy(data, 0, ret, 1, data.length);
+		ret[0] = 1;
+		return ret;
+	}
+
+	private byte[] removePaddingIndicator(byte[] value) {
+		byte[] ret = new byte[value.length - 1];
+		System.arraycopy(value, 1, ret, 0, ret.length);
+		return ret;
+	}
+
+	@Override
+	public void fromByteArray(byte[] encodedData) {
+		ASN1InputStream asn1in = new ASN1InputStream(encodedData);
+		try {
+			super.to = (DLTaggedObject) asn1in.readObject();
+			asn1in.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
+		
+		DEROctetString ocs = (DEROctetString) to.getObject();
+		value_ = ocs.getOctets();
+		super.data = removePaddingIndicator(value_);
+		
+	}
+
+}
